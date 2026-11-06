@@ -14,10 +14,10 @@ namespace GraystackIT\Pingen\Enums;
  * never heard of can therefore still read, store and display it, rather than
  * crashing on a value that is perfectly valid at the other end.
  *
- * The cases below are reconstructed from the official SDK and the dashboard
- * vocabulary rather than from a published list. Confirm them against a staging
- * account before relying on a specific one; the fallback above is what makes
- * that safe to do after release.
+ * Cases marked "confirmed" were observed on a staging account. The rest are
+ * reconstructed from the official SDK and the dashboard vocabulary rather than
+ * from a published list, so confirm one before relying on it; the fallback
+ * above is what makes that safe to do after release.
  */
 enum LetterStatus: string
 {
@@ -25,6 +25,21 @@ enum LetterStatus: string
      * Created but not submitted. Costs nothing and can still be deleted.
      */
     case Draft = 'draft';
+
+    /**
+     * The uploaded file is being checked and rendered. Confirmed: this is the
+     * status a letter is created with, before the inspection finishes.
+     */
+    case Validating = 'validating';
+
+    /**
+     * The inspection found something only a person can resolve - an address
+     * that could not be read, a font that is not embedded - and the letter
+     * waits rather than failing. Confirmed.
+     *
+     * Distinct from Invalid: this one can still be fixed and submitted.
+     */
+    case ActionRequired = 'action_required';
 
     /**
      * The uploaded file is being checked and rendered.
@@ -70,10 +85,20 @@ enum LetterStatus: string
     }
 
     /**
+     * Whether the letter is waiting on the sender before it can be submitted.
+     */
+    public function needsAttention(): bool
+    {
+        return $this === self::ActionRequired;
+    }
+
+    /**
      * Whether the letter has reached a state nothing moves it out of.
      */
     public function isFinal(): bool
     {
+        // ActionRequired is deliberately absent: it looks like a dead end and
+        // is not one, because fixing the file and submitting still works.
         return in_array($this, [self::Sent, self::Cancelled, self::Failed, self::Invalid], true);
     }
 }

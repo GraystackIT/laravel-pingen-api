@@ -65,3 +65,27 @@ it('knows which statuses are drafts and which are final', function (): void {
         ->and(LetterStatus::Cancelled->isFinal())->toBeTrue()
         ->and(LetterStatus::Processing->isFinal())->toBeFalse();
 });
+
+it('recognises the statuses observed on a live account', function (string $raw, LetterStatus $expected): void {
+    // Captured from staging: a letter is created `validating`, and a file the
+    // inspection cannot clear lands on `action_required` rather than failing.
+    $letter = Letter::fromResponse(['data' => [
+        'id' => 'l-1',
+        'type' => 'letters',
+        'attributes' => ['status' => $raw],
+    ]]);
+
+    expect($letter->status)->toBe($expected)
+        ->and($letter->rawStatus)->toBe($raw);
+})->with([
+    ['validating', LetterStatus::Validating],
+    ['action_required', LetterStatus::ActionRequired],
+]);
+
+it('does not treat action_required as the end of the road', function (): void {
+    // It reads like a dead end and is not one: the file can be corrected and
+    // the letter submitted, so an application must not archive it.
+    expect(LetterStatus::ActionRequired->isFinal())->toBeFalse()
+        ->and(LetterStatus::ActionRequired->needsAttention())->toBeTrue()
+        ->and(LetterStatus::Invalid->isFinal())->toBeTrue();
+});

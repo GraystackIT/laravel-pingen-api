@@ -83,6 +83,14 @@ $letter = app(PingenService::class)->send(
 );
 ```
 
+### What the file must satisfy
+
+Pingen inspects the PDF before anything is printed, and a file that does not clear the inspection
+lands on `LetterStatus::ActionRequired` rather than failing outright — it waits for a corrected
+file. **Fonts must be embedded**; a PDF relying on the viewer's own Helvetica is rejected, which is
+easy to produce by accident and reads as a mysterious validation failure. The event history
+(`$service->events()->list($id)`) names the reason, `content_failed_inspection` in that case.
+
 ### The address goes on the page
 
 Pingen reads the recipient off the PDF through the address window. The package only says **where**
@@ -252,11 +260,16 @@ something real. Work up from the reads — nothing costs money until `submit()`.
 
 Pingen's documentation site renders in the browser and serves no machine-readable spec, so this
 package's endpoints and field names were reconstructed from the official
-[PHP SDK](https://github.com/pingencom/pingen2-sdk-php). Paths, request shapes and the webhook
-signature are reliable. The specific values of `LetterStatus`, the `event_category` names and the
-print-option catalogues are **not yet confirmed against a live account** — which is why unknown
-statuses degrade gracefully and the print options are strings with an optional allowlist. Please
-open an issue if you find one that differs.
+[PHP SDK](https://github.com/pingencom/pingen2-sdk-php), then checked against a staging account.
+
+Confirmed live: the three-call send flow, the price calculator, the letter and event reads, the
+print options `cheap` / `simplex` / `grayscale`, and the statuses `validating` and
+`action_required`.
+
+Still unconfirmed: the remaining `LetterStatus` cases, the `event_category` names used when
+registering a webhook, and the rest of the print-option catalogue — which is why unknown statuses
+degrade to `LetterStatus::Unknown` with the raw string kept beside them, and why the print options
+are plain strings with an optional allowlist. Please open an issue if you find one that differs.
 
 ## License
 
