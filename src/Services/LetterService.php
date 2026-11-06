@@ -23,6 +23,7 @@ use GraystackIT\Pingen\Requests\Letters\SendLetterRequest;
 use GraystackIT\Pingen\Requests\Letters\UpdateLetterRequest;
 use GraystackIT\Pingen\Services\Concerns\MapsPingenErrors;
 use GraystackIT\Pingen\Support\LetterRecorder;
+use GraystackIT\Pingen\Support\PrintOptions;
 use Illuminate\Support\Facades\Log;
 use Saloon\Exceptions\Request\RequestException;
 
@@ -236,14 +237,11 @@ class LetterService
         ?string $printSpectrum = null,
         ?array $metaData = null,
     ): Letter {
-        $options = (new LetterDraft(
-            contents: '',
-            fileName: '',
-            autoSend: true,
-            deliveryProduct: $deliveryProduct,
-            printMode: $printMode,
-            printSpectrum: $printSpectrum,
-        ))->resolved();
+        $options = PrintOptions::resolve($deliveryProduct, $printMode, $printSpectrum);
+
+        // A price is a price *for a product*, so all three are required here
+        // even though a draft is created without them.
+        PrintOptions::assertComplete($options, 'Quoting a price');
 
         try {
             $response = $this->connector->send(new SendLetterRequest(
@@ -348,14 +346,11 @@ class LetterService
         ?string $printSpectrum = null,
         array $paperTypes = [],
     ): LetterPrice {
-        $options = (new LetterDraft(
-            contents: '',
-            fileName: '',
-            autoSend: true,
-            deliveryProduct: $deliveryProduct,
-            printMode: $printMode,
-            printSpectrum: $printSpectrum,
-        ))->resolved();
+        $options = PrintOptions::resolve($deliveryProduct, $printMode, $printSpectrum);
+
+        // A price is a price *for a product*, so all three are required here
+        // even though a draft is created without them.
+        PrintOptions::assertComplete($options, 'Quoting a price');
 
         try {
             $response = $this->connector->send(new CalculatePriceRequest(

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace GraystackIT\Pingen\Data;
 
 use GraystackIT\Pingen\Exceptions\ConfigurationException;
+use GraystackIT\Pingen\Support\PrintOptions;
 
 /**
  * Everything needed to send one letter, in one object.
@@ -79,77 +80,21 @@ final class LetterDraft
     {
         $addressPosition = $this->addressPosition ?? (string) config('pingen.defaults.address_position', 'left');
         $autoSend = $this->autoSend ?? (bool) config('pingen.defaults.auto_send', false);
-        $deliveryProduct = $this->deliveryProduct ?? self::configString('pingen.defaults.delivery_product');
-        $printMode = $this->printMode ?? self::configString('pingen.defaults.print_mode');
-        $printSpectrum = $this->printSpectrum ?? self::configString('pingen.defaults.print_spectrum');
 
-        self::assertAllowed('address_position', $addressPosition);
-        self::assertAllowed('delivery_product', $deliveryProduct);
-        self::assertAllowed('print_mode', $printMode);
-        self::assertAllowed('print_spectrum', $printSpectrum);
+        PrintOptions::assertAllowed('address_position', $addressPosition);
 
-        if ($autoSend && ($deliveryProduct === null || $printMode === null || $printSpectrum === null)) {
-            throw new ConfigurationException(
-                'Auto-sending a letter requires delivery_product, print_mode and print_spectrum. '
-                .'Pass them to the draft or set the PINGEN_DELIVERY_PRODUCT, PINGEN_PRINT_MODE and '
-                .'PINGEN_PRINT_SPECTRUM defaults.'
-            );
+        $options = PrintOptions::resolve($this->deliveryProduct, $this->printMode, $this->printSpectrum);
+
+        if ($autoSend) {
+            // Only auto-sending needs all three up front: a draft is created
+            // without them and names them at the later submit call.
+            PrintOptions::assertComplete($options, 'Auto-sending a letter');
         }
 
         return [
             'address_position' => $addressPosition,
             'auto_send' => $autoSend,
-            'delivery_product' => $deliveryProduct,
-            'print_mode' => $printMode,
-            'print_spectrum' => $printSpectrum,
+            ...$options,
         ];
-    }
-
-    /**
-     * Check one value against its allowlist.
-     *
-     * An empty allowlist means "anything goes", which is the shipped default
-     * for the three print options: the catalogue of postal products is
-     * Pingen's and changes without this package being released, so a hard list
-     * here would eventually block a product that works.
-     *
-     * @param  string  $key  Which option is being checked.
-     * @param  string|null  $value  The value to check; null is always allowed.
-     *
-     * @throws ConfigurationException When the value is not in a non-empty allowlist.
-     */
-    private static function assertAllowed(string $key, ?string $value): void
-    {
-        if ($value === null) {
-            return;
-        }
-
-        $allowed = config('pingen.allowed.'.$key, []);
-
-        if (! is_array($allowed) || $allowed === [] || in_array($value, $allowed, true)) {
-            return;
-        }
-
-        throw new ConfigurationException(
-            "[{$value}] is not an allowed {$key}. Allowed: ".implode(', ', array_map('strval', $allowed)).'.'
-        );
-    }
-
-    /**
-     * Read a configuration value as a non-empty string, or null.
-     *
-     * @param  string  $key  Configuration key.
-     */
-    private static function configString(string $key): ?string
-    {
-        $value = config($key);
-
-        if (! is_string($value)) {
-            return null;
-        }
-
-        $value = trim($value);
-
-        return $value === '' ? null : $value;
     }
 }
