@@ -37,7 +37,11 @@ final class LetterPrice
         $attributes = (array) ($resource['attributes'] ?? $resource);
 
         return new self(
-            value: (float) ($attributes['price_value'] ?? $attributes['value'] ?? 0.0),
+            // The price calculator answers with `price`; a letter resource
+            // carries the same figure as `price_value`. Both are read so one
+            // object can describe either, and a quote no longer silently
+            // reports 0.00 for a letter that costs money.
+            value: (float) ($attributes['price'] ?? $attributes['price_value'] ?? $attributes['value'] ?? 0.0),
             currency: (string) ($attributes['price_currency'] ?? $attributes['currency'] ?? ''),
             raw: $resource,
         );

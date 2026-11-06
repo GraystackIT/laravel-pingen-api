@@ -239,9 +239,9 @@ class LetterService
     ): Letter {
         $options = PrintOptions::resolve($deliveryProduct, $printMode, $printSpectrum);
 
-        // A price is a price *for a product*, so all three are required here
-        // even though a draft is created without them.
-        PrintOptions::assertComplete($options, 'Quoting a price');
+        // The submit call is where the product is finally chosen, so this is
+        // the last point at which the three can still be missing.
+        PrintOptions::assertComplete($options, 'Submitting a letter');
 
         try {
             $response = $this->connector->send(new SendLetterRequest(
@@ -334,7 +334,7 @@ class LetterService
      * @param  string|null  $deliveryProduct  Postal product.
      * @param  string|null  $printMode  Simplex or duplex.
      * @param  string|null  $printSpectrum  Colour or greyscale.
-     * @param  array<int, mixed>  $paperTypes  Paper type per sheet.
+     * @param  array<int, string>  $paperTypes  One entry per sheet, e.g. ['normal', 'qr'].
      *
      * @throws ConfigurationException When an option is missing or not allowed.
      * @throws PingenException When the API refuses.
@@ -351,6 +351,11 @@ class LetterService
         // A price is a price *for a product*, so all three are required here
         // even though a draft is created without them.
         PrintOptions::assertComplete($options, 'Quoting a price');
+
+        // One entry per sheet, and required by this endpoint. A caller asking
+        // only what a letter to a country costs means the common case: one
+        // ordinary sheet.
+        $paperTypes = $paperTypes === [] ? ['normal'] : $paperTypes;
 
         try {
             $response = $this->connector->send(new CalculatePriceRequest(

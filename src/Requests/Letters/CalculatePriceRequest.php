@@ -28,7 +28,7 @@ class CalculatePriceRequest extends Request implements HasBody
      * @param  string  $deliveryProduct  Postal product.
      * @param  string  $printMode  Simplex or duplex.
      * @param  string  $printSpectrum  Colour or greyscale.
-     * @param  array<int, mixed>  $paperTypes  Paper types per sheet, as the API expects them.
+     * @param  array<int, string>  $paperTypes  One entry per sheet, for example ['normal', 'qr'].
      */
     public function __construct(
         private readonly string $organisationId,
@@ -62,7 +62,9 @@ class CalculatePriceRequest extends Request implements HasBody
             'delivery_product' => $this->deliveryProduct,
             'print_mode' => $this->printMode,
             'print_spectrum' => $this->printSpectrum,
-            'paper_types' => $this->paperTypes === [] ? null : $this->paperTypes,
+            // Required by this endpoint, and never dropped: a price depends
+            // on how many sheets are printed, which is this array's length.
+            'paper_types' => $this->paperTypes,
         ];
     }
 }
