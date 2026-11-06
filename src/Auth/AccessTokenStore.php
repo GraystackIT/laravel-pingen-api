@@ -119,7 +119,7 @@ class AccessTokenStore
 
         if ($response->failed()) {
             throw new PingenException(
-                'Pingen refused the OAuth client credentials (status '.$response->status().').',
+                $this->describeRefusal($response->status(), (array) ($response->json() ?? [])),
                 $response->status(),
             );
         }
@@ -136,6 +136,64 @@ class AccessTokenStore
         $this->cache()->put($this->cacheKey(), $token, $this->lifetime($body));
 
         return $token;
+    }
+
+    /**
+     * Turn a refused token response into a sentence worth reading.
+     *
+     * The identity server says precisely what is wrong — `invalid_client` for
+     * a wrong id or secret, `invalid_scope` for a scope the client does not
+     * hold — and a bare "status 401" throws that away, leaving the only
+     * remaining move to be guessing at the credentials.
+     *
+     * @param  int  $status  The HTTP status returned.
+     * @param  array<string, mixed>  $body  The decoded error response.
+     */
+    private function describeRefusal(int $status, array $body): string
+    {
+        $message = 'Pingen refused the OAuth client credentials (status '.$status.')';
+
+        $detail = $body['error_description'] ?? $body['message'] ?? null;
+        $code = $body['error'] ?? null;
+
+        if (is_string($detail) && $detail !== '') {
+            $message .= ': '.$detail;
+        }
+
+        if (is_string($code) && $code !== '') {
+            $message .= ' ['.$code.']';
+        }
+
+        $message .= '. Asked '.$this->environment->identityUrl().' as client '
+            .$this->maskedClientId().'.';
+
+        if ($code === 'invalid_client') {
+            $message .= ' Check that the client id and secret are right, that the client is'
+                .' allowed the client_credentials grant, and that it belongs to the'
+                .' environment being asked — a production client is unknown to staging'
+                .' and the other way round.';
+        }
+
+        return $message;
+    }
+
+    /**
+     * The client id with its middle hidden, for an error message.
+     *
+     * Enough to tell two clients apart or spot a truncated value, without
+     * writing a credential into a log.
+     */
+    private function maskedClientId(): string
+    {
+        $clientId = $this->clientId ?? '';
+
+        if ($clientId === '') {
+            return '(none)';
+        }
+
+        return strlen($clientId) <= 8
+            ? substr($clientId, 0, 2).'…'
+            : substr($clientId, 0, 4).'…'.substr($clientId, -4);
     }
 
     /**

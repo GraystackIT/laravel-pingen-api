@@ -148,3 +148,29 @@ it('reports a token response with no token in it', function (): void {
 
     AccessTokenStore::fromConfig()->token();
 })->throws(PingenException::class, 'no access_token');
+
+it('repeats what the identity server said about a refusal', function (): void {
+    // "status 401" on its own leaves guessing at the credentials as the only
+    // move left; the identity server already says which one is wrong.
+    Http::fake([
+        'identity-staging.pingen.com/*' => Http::response([
+            'error' => 'invalid_client',
+            'error_description' => 'Client authentication failed',
+        ], 401),
+    ]);
+
+    try {
+        AccessTokenStore::fromConfig()->token();
+
+        $this->fail('The refusal should have thrown.');
+    } catch (PingenException $e) {
+        expect($e->getMessage())
+            ->toContain('Client authentication failed')
+            ->toContain('invalid_client')
+            ->toContain('identity-staging.pingen.com')
+            // The client id is identifiable but never written out in full.
+            ->toContain('test…t-id')
+            ->not->toContain('test-client-id')
+            ->not->toContain('test-client-secret');
+    }
+});
