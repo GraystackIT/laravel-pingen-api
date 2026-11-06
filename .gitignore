@@ -3,7 +3,6 @@
 
 # Composer lock file (optional for libraries)
 composer.lock
-# Live-probe credentials and captured exchanges — never commit these: a real
-# Pingen payload carries a recipient's postal address, and this repo is public.
+
+# Local credentials — never commit these: this repo is public.
 .env
-/storage/

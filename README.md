@@ -233,28 +233,20 @@ belong in a public repository.
 ### Against a real account
 
 The suite proves the package against mocks; only the API itself can confirm the values this package
-had to reconstruct. `scripts/probe.php` boots a throwaway Laravel application through Testbench and
-talks to a live account — no host application needed.
-
-```dotenv
-# .env in the package root — git-ignored
-PINGEN_CLIENT_ID=...
-PINGEN_CLIENT_SECRET=...
-PINGEN_ORGANISATION_ID=...
-PINGEN_STAGING=true
-```
+had to reconstruct. Install it into a throwaway Laravel application, point it at a **staging**
+account, and drive it from `php artisan tinker`:
 
 ```bash
-php scripts/probe.php token           # the credentials work
-php scripts/probe.php organisations   # the organisation id is right
-php scripts/probe.php price CH        # a read that costs nothing
-php scripts/probe.php send letter.pdf # creates a DRAFT — still costs nothing
-php scripts/probe.php find <id>       # the real status string
-php scripts/probe.php submit <id>     # COSTS MONEY: prints and posts
+composer create-project laravel/laravel pingen-sandbox
+cd pingen-sandbox
+composer config repositories.pingen path ../laravel-pingen-api
+composer require graystackit/laravel-pingen-api:@dev
 ```
 
-Every exchange is written to `storage/probe/`, so the real response shapes can be diffed against
-the ones the package assumes. Keep `PINGEN_STAGING=true` until you mean to post something.
+A `path` repository symlinks the package, so edits to it are live in the sandbox with no reinstall.
+
+Then, in `.env`, set the credentials and keep `PINGEN_STAGING=true` until you mean to post
+something real. Work up from the reads — nothing costs money until `submit()`.
 
 ## A caveat on completeness
 
