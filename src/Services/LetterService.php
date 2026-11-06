@@ -11,6 +11,7 @@ use GraystackIT\Pingen\Data\LetterPrice;
 use GraystackIT\Pingen\Events\LetterCreated;
 use GraystackIT\Pingen\Events\LetterSubmitted;
 use GraystackIT\Pingen\Exceptions\ConfigurationException;
+use GraystackIT\Pingen\Exceptions\LetterRejectedException;
 use GraystackIT\Pingen\Exceptions\PingenException;
 use GraystackIT\Pingen\Requests\Letters\CalculatePriceRequest;
 use GraystackIT\Pingen\Requests\Letters\CancelLetterRequest;
@@ -253,10 +254,27 @@ class LetterService
                 metaData: $metaData,
             ));
         } catch (RequestException $exception) {
+            $status = $exception->getResponse()->status();
+
             Log::error('Pingen: submitting a letter failed', [
                 'letter_id' => $letterId,
-                'status' => $exception->getResponse()->status(),
+                'status' => $status,
             ]);
+
+            if ($status === 409) {
+                // Pingen answers a letter it will not post with a bare
+                // "Invalid deliverable status", which says nothing about why.
+                // In practice the letter failed inspection and is sitting on
+                // action_required, and its event history gives the reason.
+                throw new LetterRejectedException(
+                    'Pingen will not submit letter '.$letterId.': it is not in a submittable state '
+                    .'(409 Invalid deliverable status). A letter that failed inspection waits on '
+                    .'action_required until the file is corrected — read its status and its event '
+                    .'history for the reason.',
+                    $status,
+                    previous: $exception,
+                );
+            }
 
             throw $this->mapException($exception, rejectable: true);
         }

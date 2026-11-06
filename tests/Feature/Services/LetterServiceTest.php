@@ -297,3 +297,32 @@ it('binds a second service to another organisation without touching the first', 
     expect($service->organisationId())->toBe('00000000-0000-4000-8000-000000000001')
         ->and($other->organisationId())->toBe('99999999-8888-4777-8666-555555555555');
 });
+
+it('explains a submit the API refuses on status grounds', function (): void {
+    // Pingen answers with a bare "Invalid deliverable status", which says
+    // nothing about why. Confirmed against staging: a letter that failed
+    // inspection sits on action_required and is refused here.
+    seedAccessToken();
+
+    $mock = new MockClient([
+        SendLetterRequest::class => MockResponse::make(
+            ['errors' => [['code' => '409', 'detail' => 'Invalid deliverable status']]],
+            409,
+        ),
+    ]);
+
+    $service = PingenService::fromConfig();
+    $service->connector()->withMockClient($mock);
+
+    try {
+        $service->submit('letter-9', 'cheap', 'simplex', 'grayscale');
+
+        $this->fail('The refusal should have thrown.');
+    } catch (LetterRejectedException $e) {
+        expect($e->getMessage())
+            ->toContain('letter-9')
+            ->toContain('not in a submittable state')
+            ->toContain('action_required')
+            ->and($e->status)->toBe(409);
+    }
+});
