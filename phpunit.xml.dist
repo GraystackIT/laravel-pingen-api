@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.0/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <!-- Invented credentials so the connector resolves. Every test uses
+             Saloon's MockClient and nothing here ever reaches Pingen. -->
+        <env name="PINGEN_CLIENT_ID" value="test-client-id"/>
+        <env name="PINGEN_CLIENT_SECRET" value="test-client-secret"/>
+        <env name="PINGEN_ORGANISATION_ID" value="00000000-0000-4000-8000-000000000001"/>
+        <env name="PINGEN_STAGING" value="true"/>
+    </php>
+</phpunit>

@@ -1,0 +1,56 @@
+{
+    "name": "graystackit/laravel-pingen-api",
+    "description": "Laravel package for the Pingen print-and-post API and its webhooks, powered by Saloon v4",
+    "keywords": ["laravel", "pingen", "letter", "print", "post", "saloon", "api"],
+    "homepage": "https://github.com/GraystackIT/laravel-pingen-api",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "GraystackIT",
+            "email": "dev@graystack.it"
+        }
+    ],
+    "require": {
+        "php": "^8.2|^8.3|^8.4",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/http": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
+        "saloonphp/saloon": "^4.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
+        "pestphp/pest": "^3.0|^4.0",
+        "pestphp/pest-plugin-laravel": "^3.0|^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "GraystackIT\\Pingen\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "GraystackIT\\Pingen\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "GraystackIT\\Pingen\\PingenServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test:coverage": "vendor/bin/pest --coverage"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    }
+}
