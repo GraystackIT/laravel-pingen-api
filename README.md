@@ -230,6 +230,32 @@ Every test uses Saloon's `MockClient` and reaches nothing real. Fixtures are inv
 a genuine Pingen payload carries a recipient's postal address, which is personal data and does not
 belong in a public repository.
 
+### Against a real account
+
+The suite proves the package against mocks; only the API itself can confirm the values this package
+had to reconstruct. `scripts/probe.php` boots a throwaway Laravel application through Testbench and
+talks to a live account — no host application needed.
+
+```dotenv
+# .env in the package root — git-ignored
+PINGEN_CLIENT_ID=...
+PINGEN_CLIENT_SECRET=...
+PINGEN_ORGANISATION_ID=...
+PINGEN_STAGING=true
+```
+
+```bash
+php scripts/probe.php token           # the credentials work
+php scripts/probe.php organisations   # the organisation id is right
+php scripts/probe.php price CH        # a read that costs nothing
+php scripts/probe.php send letter.pdf # creates a DRAFT — still costs nothing
+php scripts/probe.php find <id>       # the real status string
+php scripts/probe.php submit <id>     # COSTS MONEY: prints and posts
+```
+
+Every exchange is written to `storage/probe/`, so the real response shapes can be diffed against
+the ones the package assumes. Keep `PINGEN_STAGING=true` until you mean to post something.
+
 ## A caveat on completeness
 
 Pingen's documentation site renders in the browser and serves no machine-readable spec, so this
