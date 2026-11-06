@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use GraystackIT\Pingen\Requests\Letters\CalculatePriceRequest;
 use GraystackIT\Pingen\Requests\Letters\CreateLetterRequest;
+use GraystackIT\Pingen\Requests\Letters\SendLetterRequest;
+use GraystackIT\Pingen\Requests\Letters\UpdateLetterRequest;
 use GraystackIT\Pingen\Requests\Webhooks\CreateWebhookRequest;
 
 /**
@@ -79,7 +81,9 @@ it('uses the right resource type per endpoint', function (): void {
     $price = decodedBody(new CalculatePriceRequest('org-1', 'AT', 'cheap', 'simplex', 'grayscale'));
     $webhook = decodedBody(new CreateWebhookRequest('org-1', 'letters', 'https://app.test/hook', 'key'));
 
-    expect($price['data']['type'])->toBe('letters')
+    // The price calculator is its own resource type; Pingen rejects the
+    // document with "Value \"letter_price_calculator\" is required" otherwise.
+    expect($price['data']['type'])->toBe('letter_price_calculator')
         ->and($webhook['data']['type'])->toBe('webhooks')
         ->and($webhook['data']['attributes']['signing_key'])->toBe('key');
 });
@@ -91,4 +95,23 @@ it('builds the endpoints the API documents', function (): void {
         ->toBe('/organisations/org-1/deliveries/letters/price-calculator')
         ->and((new CreateWebhookRequest('org-1', 'letters', 'https://app.test/hook', 'key'))->resolveEndpoint())
         ->toBe('/organisations/org-1/webhooks');
+});
+
+it('carries the resource id on a PATCH and omits it on a create', function (): void {
+    // Pingen requires data.id on every PATCH - the id is in the path too, but
+    // the document is rejected without it - and the server assigns the id on
+    // a create, so sending one there is wrong.
+    $send = decodedBody(new SendLetterRequest('org-1', 'letter-7', 'cheap', 'simplex', 'grayscale'));
+    $update = decodedBody(new UpdateLetterRequest('org-1', 'letter-7', ['print_mode' => 'duplex']));
+    $create = decodedBody(new CreateLetterRequest(
+        organisationId: 'org-1',
+        fileUrl: 'https://storage.example.test/u',
+        fileUrlSignature: 'sig',
+        fileOriginalName: 'invoice.pdf',
+        addressPosition: 'left',
+    ));
+
+    expect($send['data']['id'])->toBe('letter-7')
+        ->and($update['data']['id'])->toBe('letter-7')
+        ->and($create['data'])->not->toHaveKey('id');
 });

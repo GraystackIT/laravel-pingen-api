@@ -44,6 +44,11 @@ class SendLetterRequest extends Request implements HasBody
         return '/organisations/'.$this->organisationId.'/deliveries/letters/'.$this->letterId.'/send';
     }
 
+    protected function jsonApiId(): ?string
+    {
+        return $this->letterId;
+    }
+
     protected function jsonApiType(): string
     {
         return 'letters';

@@ -37,6 +37,11 @@ class UpdateLetterRequest extends Request implements HasBody
         return '/organisations/'.$this->organisationId.'/deliveries/letters/'.$this->letterId;
     }
 
+    protected function jsonApiId(): ?string
+    {
+        return $this->letterId;
+    }
+
     protected function jsonApiType(): string
     {
         return 'letters';

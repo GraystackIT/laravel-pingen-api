@@ -46,7 +46,10 @@ class CalculatePriceRequest extends Request implements HasBody
 
     protected function jsonApiType(): string
     {
-        return 'letters';
+        // Not "letters": the price calculator is its own resource type, and
+        // the API rejects the document outright when it is called anything
+        // else.
+        return 'letter_price_calculator';
     }
 
     /**

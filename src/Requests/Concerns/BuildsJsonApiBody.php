@@ -40,6 +40,19 @@ trait BuildsJsonApiBody
     abstract protected function jsonApiAttributes(): array;
 
     /**
+     * The resource id to send inside the envelope, when the endpoint wants one.
+     *
+     * Pingen requires it on every PATCH — the id is in the path as well, but
+     * the document is rejected without it — and forbids it on a create, where
+     * the server assigns the id. Null therefore means "leave it out" rather
+     * than "send null".
+     */
+    protected function jsonApiId(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Relationships to send alongside the attributes.
      *
      * @return array<string, mixed>
@@ -54,7 +67,10 @@ trait BuildsJsonApiBody
      */
     protected function defaultBody(): ?string
     {
+        $id = $this->jsonApiId();
+
         $data = [
+            ...($id === null ? [] : ['id' => $id]),
             'type' => $this->jsonApiType(),
             'attributes' => array_filter(
                 $this->jsonApiAttributes(),
