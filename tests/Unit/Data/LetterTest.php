@@ -89,3 +89,13 @@ it('does not treat action_required as the end of the road', function (): void {
         ->and(LetterStatus::ActionRequired->needsAttention())->toBeTrue()
         ->and(LetterStatus::Invalid->isFinal())->toBeTrue();
 });
+
+it('treats a validated letter as still unspent', function (): void {
+    // Confirmed against staging: a letter created through the API settles on
+    // `valid`, not `draft`, once the inspection passes. Anything that asks
+    // "can this still be changed" must accept both, or every API-created
+    // letter looks committed the moment it becomes usable.
+    expect(LetterStatus::Valid->isDraft())->toBeTrue()
+        ->and(LetterStatus::Valid->isFinal())->toBeFalse()
+        ->and(LetterStatus::from('valid'))->toBe(LetterStatus::Valid);
+});

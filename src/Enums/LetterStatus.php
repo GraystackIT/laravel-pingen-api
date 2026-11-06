@@ -33,6 +33,16 @@ enum LetterStatus: string
     case Validating = 'validating';
 
     /**
+     * The file cleared inspection and the letter is ready to submit, but
+     * nothing has been spent yet. Confirmed.
+     *
+     * This - not Draft - is what a letter created through the API settles on
+     * once Pingen has read it, so an application deciding whether a letter can
+     * still be changed must accept both.
+     */
+    case Valid = 'valid';
+
+    /**
      * The inspection found something only a person can resolve - an address
      * that could not be read, a font that is not embedded - and the letter
      * waits rather than failing. Confirmed.
@@ -81,7 +91,7 @@ enum LetterStatus: string
      */
     public function isDraft(): bool
     {
-        return $this === self::Draft;
+        return in_array($this, [self::Draft, self::Valid], true);
     }
 
     /**

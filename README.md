@@ -87,9 +87,31 @@ $letter = app(PingenService::class)->send(
 
 Pingen inspects the PDF before anything is printed, and a file that does not clear the inspection
 lands on `LetterStatus::ActionRequired` rather than failing outright — it waits for a corrected
-file. **Fonts must be embedded**; a PDF relying on the viewer's own Helvetica is rejected, which is
-easy to produce by accident and reads as a mysterious validation failure. The event history
-(`$service->events()->list($id)`) names the reason, `content_failed_inspection` in that case.
+file. **Fonts must be embedded**; a PDF relying on the viewer's own Helvetica is rejected.
+
+The layout is measured, and the dashboard states the figures per letter (A4, left address):
+
+| Region | x | y | w | h |
+|---|---|---|---|---|
+| Restricted border | 5mm on every side | | | |
+| Postage area | 20mm | 40mm | 89.5mm | 47.5mm |
+| Address area | 22mm | 60mm | 85.5mm | 25.5mm |
+
+The address area sits **inside** the postage area, which is the trap: an address block starting
+above y=60 is still inside the postage area and is rejected as content found there, while one
+starting lower overflows past y=85.5 and silently loses its first lines. The whole address has
+25.5mm of height.
+
+The reason for a rejection is in the event's `data`, and nowhere else:
+
+```php
+foreach ($service->events()->list($letterId) as $event) {
+    $event->code;   // 'content_failed_inspection'
+    $event->data;   // ['protected_stamp_area'] — the actual reason
+}
+```
+
+Values seen so far: `protected_stamp_area`, `address_insufficient_lines`, `address_empty`.
 
 ### The address goes on the page
 
@@ -263,7 +285,7 @@ package's endpoints and field names were reconstructed from the official
 [PHP SDK](https://github.com/pingencom/pingen2-sdk-php), then checked against a staging account.
 
 Confirmed live: the three-call send flow, the price calculator, the letter and event reads, the
-print options `cheap` / `simplex` / `grayscale`, and the statuses `validating` and
+print options `cheap` / `simplex` / `grayscale`, and the statuses `validating`, `valid` and
 `action_required`.
 
 Still unconfirmed: the remaining `LetterStatus` cases, the `event_category` names used when
