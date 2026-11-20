@@ -11,6 +11,7 @@ use GraystackIT\Pingen\Events\LetterUndeliverable;
 use GraystackIT\Pingen\Models\PingenLetter;
 use GraystackIT\Pingen\Models\PingenWebhookEvent;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Post a delivery to the webhook endpoint, signed if a key is configured.
@@ -152,4 +153,18 @@ it('is not registered when webhooks are switched off', function (): void {
         ->map(fn ($route): string => $route->uri());
 
     expect($routes)->toContain('pingen/webhook');
+});
+
+it('says so in the log when a delivery names no status to act on', function (): void {
+    // A verified, claimed delivery that this package can do nothing with still
+    // answers 200, which from the provider side is indistinguishable from one
+    // that was handled. The log line is the only way to tell the two apart.
+    Log::spy();
+    Event::fake([LetterSent::class, LetterStatusChanged::class]);
+
+    postWebhook(webhookPayload(status: ''))->assertOk();
+
+    Event::assertNotDispatched(LetterSent::class);
+    Event::assertNotDispatched(LetterStatusChanged::class);
+    Log::shouldHaveReceived('notice')->once();
 });

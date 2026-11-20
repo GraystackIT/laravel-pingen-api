@@ -81,7 +81,20 @@ class WebhookController extends Controller
         if ($letterId !== null && $status !== '') {
             $recorder->recordStatus($letterId, $status, $payload);
             $this->announce($letterId, $status, $payload);
+
+            return response()->json(['status' => 'ok']);
         }
+
+        // Verified, claimed, and about nothing this package can act on. That
+        // deserves a line of its own: from the provider's side it looks exactly
+        // like a delivery that was handled, and an endpoint answering 200 to
+        // everything is the hardest kind of webhook to find a fault in.
+        Log::notice('Pingen webhook: nothing to announce, the delivery names no letter or no status', [
+            'event_id' => $eventId,
+            'category' => $category,
+            'letter_id' => $letterId,
+            'status' => $status,
+        ]);
 
         return response()->json(['status' => 'ok']);
     }

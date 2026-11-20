@@ -302,7 +302,11 @@ class LetterService
                 new CancelLetterRequest($this->connector->organisationId(), $letterId)
             );
         } catch (RequestException $exception) {
-            throw $this->mapException($exception);
+            // Rejectable: a 409 here is the API saying the letter is past the
+            // point of stopping, which is a state the caller has to tell apart
+            // from a provider that could not be reached. Both used to arrive as
+            // the same class, leaving the distinction to be made on the message.
+            throw $this->mapException($exception, rejectable: true);
         }
     }
 

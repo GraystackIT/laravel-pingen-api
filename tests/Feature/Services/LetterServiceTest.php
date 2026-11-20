@@ -258,6 +258,32 @@ it('cancels a letter', function (): void {
         ->toContain('/deliveries/letters/11111111-2222-4333-8444-555555555555/cancel');
 });
 
+it('reports a letter too far along to stop as a refusal', function (): void {
+    // A 409 on cancel is the API saying the letter is past the point of
+    // stopping. The caller has to tell that apart from a provider it could not
+    // reach: one is final and belongs on the screen, the other is worth
+    // retrying. Both used to arrive as the same class.
+    $mock = new MockClient([
+        CancelLetterRequest::class => MockResponse::make(
+            ['errors' => [['code' => '409', 'detail' => 'Invalid letter status']]],
+            409,
+        ),
+    ]);
+
+    expect(fn () => serviceWithMock($mock)->cancel('11111111-2222-4333-8444-555555555555'))
+        ->toThrow(LetterRejectedException::class);
+});
+
+it('leaves a cancel that failed in transit as an ordinary failure', function (): void {
+    $mock = new MockClient([
+        CancelLetterRequest::class => MockResponse::make(['errors' => [['detail' => 'Gateway down']]], 502),
+    ]);
+
+    expect(fn () => serviceWithMock($mock)->cancel('11111111-2222-4333-8444-555555555555'))
+        ->toThrow(PingenException::class)
+        ->not->toThrow(LetterRejectedException::class);
+});
+
 it('records the letter when database storage is on', function (): void {
     config()->set('pingen.store_logs', true);
     config()->set('pingen.storage_driver', 'database');

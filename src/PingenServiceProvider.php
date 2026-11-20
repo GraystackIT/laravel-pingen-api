@@ -8,6 +8,7 @@ use GraystackIT\Pingen\Auth\AccessTokenStore;
 use GraystackIT\Pingen\Connectors\PingenConnector;
 use GraystackIT\Pingen\Connectors\UploadConnector;
 use GraystackIT\Pingen\Console\PruneWebhookEventsCommand;
+use GraystackIT\Pingen\Console\WebhooksCommand;
 use GraystackIT\Pingen\Services\FileUploadService;
 use GraystackIT\Pingen\Services\LetterEventService;
 use GraystackIT\Pingen\Services\LetterService;
@@ -81,7 +82,7 @@ class PingenServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
-            $this->commands([PruneWebhookEventsCommand::class]);
+            $this->commands([PruneWebhookEventsCommand::class, WebhooksCommand::class]);
 
             $this->publishes([
                 __DIR__.'/../config/pingen.php' => config_path('pingen.php'),
