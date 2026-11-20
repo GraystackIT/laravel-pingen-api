@@ -352,3 +352,41 @@ it('explains a submit the API refuses on status grounds', function (): void {
             ->and($e->status)->toBe(409);
     }
 });
+
+it('sends the caller idempotency key with the letter it creates', function (): void {
+    // The one call in this package that cannot be safely repeated. A retry
+    // after a response that never arrived posts a second physical letter, and
+    // no local guard can know what happened on the far side of the timeout.
+    $mock = new MockClient([
+        RequestFileUploadRequest::class => MockResponse::make([
+            'data' => ['attributes' => ['url' => 'https://files.test/slot', 'signature' => 'sig']],
+        ], 200),
+        UploadFileRequest::class => MockResponse::make([], 200),
+        CreateLetterRequest::class => MockResponse::make([
+            'data' => ['id' => 'ltr-1', 'type' => 'letters', 'attributes' => ['status' => 'processing']],
+        ], 200),
+    ]);
+
+    serviceWithMock($mock)->letters()->uploadAndCreate(
+        new LetterDraft(contents: '%PDF-1.4', fileName: 'letter.pdf'),
+        idempotencyKey: 'letter-42',
+    );
+
+    expect($mock->getLastPendingRequest()->headers()->get('Idempotency-Key'))->toBe('letter-42');
+});
+
+it('sends no idempotency header when the caller names no key', function (): void {
+    $mock = new MockClient([
+        RequestFileUploadRequest::class => MockResponse::make([
+            'data' => ['attributes' => ['url' => 'https://files.test/slot', 'signature' => 'sig']],
+        ], 200),
+        UploadFileRequest::class => MockResponse::make([], 200),
+        CreateLetterRequest::class => MockResponse::make([
+            'data' => ['id' => 'ltr-1', 'type' => 'letters', 'attributes' => ['status' => 'processing']],
+        ], 200),
+    ]);
+
+    serviceWithMock($mock)->letters()->uploadAndCreate(new LetterDraft(contents: '%PDF-1.4', fileName: 'letter.pdf'));
+
+    expect($mock->getLastPendingRequest()->headers()->get('Idempotency-Key'))->toBeNull();
+});

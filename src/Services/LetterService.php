@@ -54,11 +54,14 @@ class LetterService
      * Upload a file and create the letter from it.
      *
      * @param  LetterDraft  $draft  What to send.
+     * @param  string|null  $idempotencyKey  A key of the caller's own for this letter. Pingen answers a
+     *                                       repeat of it with the letter created the first time, which is
+     *                                       what stops a retried hand-over posting a second one.
      *
      * @throws ConfigurationException When the draft names an option the configuration forbids.
      * @throws PingenException When any of the three calls fails.
      */
-    public function uploadAndCreate(LetterDraft $draft): Letter
+    public function uploadAndCreate(LetterDraft $draft, ?string $idempotencyKey = null): Letter
     {
         $options = $draft->resolved();
 
@@ -77,6 +80,7 @@ class LetterService
                 printMode: $options['print_mode'],
                 printSpectrum: $options['print_spectrum'],
                 metaData: $draft->metaData,
+                idempotencyKey: $idempotencyKey,
             ));
         } catch (RequestException $exception) {
             Log::error('Pingen: letter creation failed', [

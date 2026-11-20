@@ -16,6 +16,15 @@ use Saloon\Http\Request;
  * {@see SendLetterRequest}. With it true the three print options become
  * mandatory, because the letter goes to production immediately and there is no
  * later call in which to name them.
+ *
+ * **Idempotency.** Creating a letter is the one call in this package that
+ * cannot be safely repeated: a retry after a response that never arrived posts
+ * a second physical letter, and the first one is already being printed. Pingen
+ * answers a repeat of the same `Idempotency-Key` with the letter it created the
+ * first time instead of creating another, which is the only safeguard that
+ * holds — a local lock cannot know what happened on the far side of a timeout.
+ * Verified against the Pingen staging API: two creates under one key returned
+ * one letter id.
  */
 class CreateLetterRequest extends Request implements HasBody
 {
@@ -34,6 +43,7 @@ class CreateLetterRequest extends Request implements HasBody
      * @param  string|null  $printMode  Simplex or duplex; required when auto-sending.
      * @param  string|null  $printSpectrum  Colour or greyscale; required when auto-sending.
      * @param  array<string, mixed>|null  $metaData  Arbitrary data stored with the letter.
+     * @param  string|null  $idempotencyKey  Caller's key for this letter; a repeat returns the first letter.
      */
     public function __construct(
         private readonly string $organisationId,
@@ -46,7 +56,18 @@ class CreateLetterRequest extends Request implements HasBody
         private readonly ?string $printMode = null,
         private readonly ?string $printSpectrum = null,
         private readonly ?array $metaData = null,
+        private readonly ?string $idempotencyKey = null,
     ) {}
+
+    /**
+     * @return array<string, string>
+     */
+    protected function defaultHeaders(): array
+    {
+        return $this->idempotencyKey === null || trim($this->idempotencyKey) === ''
+            ? []
+            : ['Idempotency-Key' => trim($this->idempotencyKey)];
+    }
 
     public function resolveEndpoint(): string
     {

@@ -87,6 +87,18 @@ $letter->status;  // LetterStatus::Draft
 
 That one call does three HTTP requests: it asks for an upload slot, PUTs the file to the signed URL it gets back, and creates the letter quoting that slot's signature.
 
+### Retries without a second letter
+
+Creating a letter is the one call in this package that cannot be safely repeated. A retry after a response that never arrived — a timeout, a worker killed between the answer and the save — posts a second physical letter while the first is already being printed, and nothing on the caller's side can see across that gap.
+
+Pass a key of your own, the same one on every attempt at the same letter:
+
+```php
+$service->send($draft, idempotencyKey: 'invoice-'.$invoice->id);
+```
+
+Pingen answers a repeat of that key with the letter it created the first time instead of creating another. Derive the key from the record you are posting, not from the attempt.
+
 ### Send a file from disk
 
 ```php

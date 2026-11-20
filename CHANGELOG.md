@@ -13,6 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   events, webhook management, the inbound webhook endpoint with signature verification and a
   replay guard, and optional database storage of letters and webhook deliveries.
 
+- `PingenService::send()` and `LetterService::uploadAndCreate()` take an optional idempotency key,
+  sent as the `Idempotency-Key` header on letter creation. Creating a letter is the one call here
+  that cannot be safely repeated: a retry after a response that never arrived posts a second
+  physical letter while the first is already being printed, and no guard on the caller's side can
+  see across that gap. Pingen answers a repeat of the key with the letter it created the first
+  time; verified against the staging API, where two creates under one key returned one letter id.
 - `pingen:webhooks` lists the registered webhooks, or points them all at an endpoint. The listing
   says per row whether the key a webhook was registered with still matches the configured one,
   comparing it rather than printing it. Both failures it makes visible are otherwise silent: a

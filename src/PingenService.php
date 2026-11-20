@@ -95,13 +95,17 @@ class PingenService
      * Send a letter: upload the file, create the letter, submit it if asked.
      *
      * @param  LetterDraft  $draft  What to send.
+     * @param  string|null  $idempotencyKey  A key of the caller's own for this letter. A repeat of it
+     *                                       returns the letter created the first time rather than
+     *                                       posting a second one, which is what makes a retried
+     *                                       hand-over safe after a response that never arrived.
      *
      * @throws ConfigurationException When the draft names an option the configuration forbids.
      * @throws PingenException When any call fails.
      */
-    public function send(LetterDraft $draft): Letter
+    public function send(LetterDraft $draft, ?string $idempotencyKey = null): Letter
     {
-        return $this->letters()->uploadAndCreate($draft);
+        return $this->letters()->uploadAndCreate($draft, $idempotencyKey);
     }
 
     /**
