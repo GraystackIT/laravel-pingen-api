@@ -12,7 +12,6 @@ use GraystackIT\Pingen\Events\LetterStatusChanged;
 use GraystackIT\Pingen\Events\LetterUndeliverable;
 use GraystackIT\Pingen\Models\PingenWebhookEvent;
 use GraystackIT\Pingen\Support\LetterRecorder;
-use GraystackIT\Pingen\Support\PayloadCapture;
 use GraystackIT\Pingen\Traits\VerifiesPingenSignature;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -63,8 +62,6 @@ class WebhookController extends Controller
         $letterId = $this->letterId($data);
         $status = (string) ($attributes['status'] ?? $attributes['code'] ?? '');
         $category = $this->stringOrNull($attributes['event_category'] ?? $data['type'] ?? null);
-
-        PayloadCapture::write($request, $category ?? 'webhook');
 
         if (! $this->claim($eventId, $letterId, $category, $payload)) {
             Log::info('Pingen webhook: delivery already handled, ignoring', ['event_id' => $eventId]);

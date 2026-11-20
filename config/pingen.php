@@ -163,20 +163,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Payload Capture
-    |--------------------------------------------------------------------------
-    |
-    | Directory to write every verified webhook body to, one JSON file per
-    | delivery, for capturing real payloads as fixtures. Runs only in the local
-    | and testing environments: a letter payload carries a recipient postal
-    | address, and nothing prunes these files, so a path set on a production
-    | system is ignored rather than obeyed.
-    |
-    */
-    'capture_path' => env('PINGEN_CAPTURE_PATH'),
-
-    /*
-    |--------------------------------------------------------------------------
     | Retries
     |--------------------------------------------------------------------------
     */

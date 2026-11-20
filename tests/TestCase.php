@@ -50,7 +50,6 @@ abstract class TestCase extends OrchestraTestCase
         $app['config']->set('pingen.webhook.signing_key', null);
         $app['config']->set('pingen.store_logs', false);
         $app['config']->set('pingen.storage_driver', 'log');
-        $app['config']->set('pingen.capture_path', null);
         $app['config']->set('pingen.retry.times', 1);
         $app['config']->set('pingen.retry.delay', 0);
         $app['config']->set('pingen.defaults.delivery_product', 'cheap');
